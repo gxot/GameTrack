@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "GameTrack",
+    "slug": "gametrack",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light"
+  }
+}
