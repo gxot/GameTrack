@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,17 +9,29 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const pending = useRef(false);
+  const mounted = useRef(false);
+  const passwordInput = useRef(null);
+  const emailInput = useRef(null);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   async function handleLogin() {
-    if (isSubmitting) return;
+    if (pending.current || !mounted.current) return;
     setError('');
+    pending.current = true;
+    Keyboard.dismiss();
     setIsSubmitting(true);
     try {
       await login(email, password);
     } catch (failure) {
-      setError(failure.message);
+      if (mounted.current) setError(failure.message);
     } finally {
-      setIsSubmitting(false);
+      pending.current = false;
+      if (mounted.current) setIsSubmitting(false);
     }
   }
 
@@ -33,17 +45,20 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.title} accessibilityRole="header">Entre na sua conta</Text>
             <Text style={styles.label}>E-mail</Text>
             <TextInput
-              style={styles.input} value={email} onChangeText={setEmail}
+              ref={emailInput} style={styles.input} value={email} onChangeText={setEmail}
               accessibilityLabel="E-mail" placeholder="seuemail@exemplo.com" placeholderTextColor="#a1a1b8"
               keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
               autoComplete="email" textContentType="emailAddress" editable={!isSubmitting}
+              accessibilityState={{ disabled: isSubmitting }} returnKeyType="next" blurOnSubmit={false}
+              onSubmitEditing={() => passwordInput.current?.focus()}
             />
             <Text style={styles.label}>Senha</Text>
             <TextInput
-              style={styles.input} value={password} onChangeText={setPassword}
+              ref={passwordInput} style={styles.input} value={password} onChangeText={setPassword}
               accessibilityLabel="Senha" placeholder="Sua senha" placeholderTextColor="#a1a1b8"
               secureTextEntry autoCapitalize="none" autoCorrect={false}
               autoComplete="current-password" textContentType="password" editable={!isSubmitting}
+              accessibilityState={{ disabled: isSubmitting }}
               returnKeyType="go" onSubmitEditing={handleLogin}
             />
             {!!error && <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text>}
@@ -53,7 +68,10 @@ export default function LoginScreen({ navigation }) {
               accessibilityLabel={isSubmitting ? 'Entrando na conta' : 'Entrar'}
               accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}
             >
-              {isSubmitting ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Entrar</Text>}
+              <View style={styles.buttonContent}>
+                {isSubmitting && <ActivityIndicator color="#ffffff" accessible={false} />}
+                <Text style={styles.buttonText}>{isSubmitting ? 'Entrando…' : 'Entrar'}</Text>
+              </View>
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.link, pressed && styles.pressed]}
@@ -78,13 +96,14 @@ const styles = StyleSheet.create({
   title: { color: '#fafafa', fontSize: 24, fontWeight: '700', marginBottom: 8 },
   subtitle: { color: '#c4c4d8', fontSize: 16, marginBottom: 28 },
   label: { color: '#e5e5ef', fontSize: 16, marginBottom: 8 },
-  input: { color: '#fafafa', backgroundColor: '#1c1c2c', borderColor: '#666683', borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 20 },
+  input: { minHeight: 48, color: '#fafafa', backgroundColor: '#1c1c2c', borderColor: '#666683', borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 20 },
   hint: { color: '#c4c4d8', fontSize: 14, marginBottom: 16 },
   error: { color: '#fda4af', fontSize: 16, marginBottom: 20 },
-  button: { backgroundColor: '#7c3aed', borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, paddingHorizontal: 20 },
+  buttonContent: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  button: { minWidth: 48, minHeight: 48, backgroundColor: '#7c3aed', borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, paddingHorizontal: 20 },
   buttonText: { color: '#ffffff', fontSize: 17, fontWeight: '700', textAlign: 'center' },
-  link: { paddingVertical: 18, paddingHorizontal: 8, alignItems: 'center' },
+  link: { minWidth: 48, minHeight: 48, paddingVertical: 18, paddingHorizontal: 8, alignItems: 'center' },
   linkText: { color: '#c4b5fd', fontSize: 16, fontWeight: '600', textAlign: 'center' },
   pressed: { opacity: 0.8 },
-  disabled: { opacity: 0.6 },
+  disabled: { backgroundColor: '#35304c' },
 });

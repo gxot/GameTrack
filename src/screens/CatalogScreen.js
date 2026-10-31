@@ -49,7 +49,6 @@ export default function CatalogScreen({ navigation }) {
 
   function handleRetry() {
     retry();
-    if (genresError) retryGenres();
   }
 
   const header = (
@@ -77,7 +76,7 @@ export default function CatalogScreen({ navigation }) {
         <Text style={styles.buttonText}>Buscar jogos</Text>
       </Pressable>
       <View style={styles.collectionLinks}>
-        <Pressable onPress={() => navigation.navigate('Favorites')} style={styles.collectionButton} accessibilityRole="button" accessibilityLabel="Meus favoritos">
+        <Pressable onPress={() => navigation.navigate('Favorites')} style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Meus favoritos">
           <Text style={styles.collectionText}>Meus favoritos</Text>
         </Pressable>
         <Pressable onPress={() => navigation.navigate('Completed')} style={styles.collectionButton} accessibilityRole="button" accessibilityLabel="Jogos finalizados">
@@ -94,8 +93,8 @@ export default function CatalogScreen({ navigation }) {
       )}
       {!!genresError && genresError.code !== 'API_KEY_MISSING' && (
         <View style={styles.genreWarning}>
-          <Text style={styles.notice} accessibilityLiveRegion="polite">Os filtros não puderam ser carregados. O catálogo continua disponível.</Text>
-          <Pressable onPress={retryGenres} style={styles.retryLink} accessibilityRole="button" accessibilityLabel="Tentar carregar gêneros novamente">
+          <Text style={styles.notice} accessibilityLiveRegion="polite">Não foi possível carregar os filtros. Tente carregar os gêneros novamente.</Text>
+          <Pressable onPress={retryGenres} disabled={isLoadingGenres} accessibilityState={{ disabled: isLoadingGenres, busy: isLoadingGenres }} style={({ pressed }) => [styles.retryLink, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Tentar carregar gêneros novamente">
             <Text style={styles.linkText}>Tentar carregar gêneros</Text>
           </Pressable>
         </View>
@@ -106,7 +105,7 @@ export default function CatalogScreen({ navigation }) {
           accessibilityState={{ selected: selectedGenre === null }}
           style={({ pressed }) => [styles.filter, selectedGenre === null && styles.selectedFilter, pressed && styles.pressed]}
         >
-          <Text style={[styles.filterText, selectedGenre === null && styles.selectedFilterText]}>Todos</Text>
+          <Text style={[styles.filterText, selectedGenre === null && styles.selectedFilterText]}>{selectedGenre === null ? '✓ Todos' : 'Todos'}</Text>
         </Pressable>
         {genres.map((genre) => (
           <Pressable
@@ -114,7 +113,7 @@ export default function CatalogScreen({ navigation }) {
             accessibilityLabel={'Filtrar por ' + genre.name} accessibilityState={{ selected: selectedGenre === genre.slug }}
             style={({ pressed }) => [styles.filter, selectedGenre === genre.slug && styles.selectedFilter, pressed && styles.pressed]}
           >
-            <Text style={[styles.filterText, selectedGenre === genre.slug && styles.selectedFilterText]}>{genre.name}</Text>
+            <Text style={[styles.filterText, selectedGenre === genre.slug && styles.selectedFilterText]}>{selectedGenre === genre.slug ? '✓ ' + genre.name : genre.name}</Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -139,7 +138,7 @@ export default function CatalogScreen({ navigation }) {
       ) : (
         <>
           <Text style={styles.emptyTitle}>Nenhum jogo encontrado</Text>
-          <Text style={styles.emptyText}>Tente outro gênero ou puxe para atualizar.</Text>
+          <Text style={styles.emptyText}>Experimente outro gênero ou puxe para atualizar.</Text>
         </>
       )}
     </View>
@@ -180,25 +179,25 @@ const styles = StyleSheet.create({
   list: { flex: 1 },
   listContent: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 12 },
   collectionLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
-  collectionButton: { borderWidth: 1, borderColor: '#81719f', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, flexGrow: 1 },
+  collectionButton: { minWidth: 48, minHeight: 48, borderWidth: 1, borderColor: '#81719f', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, flexGrow: 1 },
   collectionText: { color: '#c4b5fd', fontSize: 16, textAlign: 'center', fontWeight: '600' },
   header: { paddingHorizontal: 6, marginBottom: 20 },
   topRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 28 },
   identity: { flexGrow: 1, flexShrink: 1 },
   brand: { color: '#a78bfa', fontSize: 30, fontWeight: '800', marginBottom: 6 },
   greeting: { color: '#e5e5ef', fontSize: 16 },
-  logout: { borderWidth: 1, borderColor: '#81719f', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  logout: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#81719f', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
   logoutText: { color: '#c4b5fd', fontSize: 15, fontWeight: '600' },
-  searchButton: { backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14, marginBottom: 24 },
+  searchButton: { minHeight: 48, backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14, marginBottom: 24 },
   title: { color: '#fafafa', fontSize: 24, fontWeight: '700', marginBottom: 8 },
   subtitle: { color: '#c4c4d8', fontSize: 16, marginBottom: 20 },
   genreLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   genreWarning: { marginBottom: 12 },
   notice: { color: '#c4c4d8', fontSize: 14, flexShrink: 1 },
-  retryLink: { paddingVertical: 12, alignSelf: 'flex-start' },
+  retryLink: { minHeight: 48, minWidth: 48, paddingHorizontal: 8, justifyContent: 'center', paddingVertical: 12, alignSelf: 'flex-start' },
   linkText: { color: '#c4b5fd', fontSize: 14, fontWeight: '600' },
   filters: { gap: 8, paddingVertical: 4 },
-  filter: { paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: '#81719f', borderRadius: 24, backgroundColor: '#1c1c2c', justifyContent: 'center' },
+  filter: { minHeight: 48, minWidth: 48, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: '#81719f', borderRadius: 24, backgroundColor: '#1c1c2c', justifyContent: 'center' },
   selectedFilter: { backgroundColor: '#7c3aed', borderColor: '#a78bfa' },
   filterText: { color: '#d4d4e4', fontSize: 14, fontWeight: '600' },
   selectedFilterText: { color: '#ffffff' },
@@ -207,10 +206,10 @@ const styles = StyleSheet.create({
   emptyTitle: { color: '#fafafa', fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
   emptyText: { color: '#c4c4d8', fontSize: 16, textAlign: 'center', marginVertical: 16 },
   error: { color: '#fda4af', fontSize: 16, textAlign: 'center', marginBottom: 16 },
-  retryButton: { alignSelf: 'center', backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14 },
+  retryButton: { minHeight: 48, minWidth: 48, alignSelf: 'center', backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14 },
   buttonText: { color: '#ffffff', fontSize: 16, fontWeight: '700', textAlign: 'center' },
   footer: { paddingHorizontal: 6, paddingVertical: 16 },
   endText: { color: '#c4c4d8', fontSize: 14, textAlign: 'center' },
   pressed: { opacity: 0.8 },
-  disabled: { opacity: 0.6 },
+  disabled: { backgroundColor: '#35304c' },
 });

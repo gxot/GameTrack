@@ -4,7 +4,7 @@ Aplicativo mobile acadêmico para a disciplina Mobile Development: Frameworks da
 
 ## Etapa atual
 
-A etapa 5 implementa favoritos com Context API (RF04), tela de favoritos (RF05), persistência local por usuário com AsyncStorage (RF06) e jogos finalizados com avaliação pessoal inteira de 1 a 5 estrelas (RF07). Autenticação, catálogo, busca, detalhes, filtros, paginação, refresh e logout foram preservados. As consultas à RAWG continuam dependendo de uma chave válida e das dependências já declaradas.
+A etapa 6 refina a UI/UX, o feedback visual (RF09) e a acessibilidade (RF10) do aplicativo existente, sem adicionar funcionalidades ou dependências. Autenticação, catálogo, busca, detalhes, favoritos, finalizados, avaliações pessoais e persistência por usuário foram preservados. As consultas à RAWG continuam dependendo de uma chave válida e das dependências já declaradas.
 
 As dependências foram apenas declaradas no package.json, sem instalação. Nenhum comando, teste, lint, build, servidor ou validação automatizada foi executado nesta etapa. As versões de Expo, React e React Native seguem o [template blank oficial do Expo SDK 54](https://github.com/expo/expo/blob/sdk-54/templates/expo-template-blank/package.json).
 
@@ -112,7 +112,7 @@ Para utilizar o catálogo, o desenvolvedor deverá substituir manualmente `SUA_C
 
 ## Dependências
 
-Nenhuma nova dependência foi introduzida nas Etapas 4 e 5. Axios ^1.13.2 já estava declarado no package.json desde a Etapa 3, sem instalação ou arquivo de lock. A integração utiliza a [instância Axios](https://axios-http.com/docs/instance) e [cancelamento com AbortController](https://axios-http.com/docs/cancellation). As dependências de Expo SDK 54, autenticação e navegação foram preservadas.
+Nenhuma nova dependência foi introduzida nas Etapas 4, 5 e 6. Axios ^1.13.2 já estava declarado no package.json desde a Etapa 3, sem instalação ou arquivo de lock. A integração utiliza a [instância Axios](https://axios-http.com/docs/instance) e [cancelamento com AbortController](https://axios-http.com/docs/cancellation). As dependências de Expo SDK 54, autenticação e navegação foram preservadas.
 
 ## Busca por nome — RF08
 
@@ -130,7 +130,7 @@ Nenhuma nova dependência foi introduzida nas Etapas 4 e 5. Axios ^1.13.2 já es
 - GameDetailsScreen lê route.params.id e chama getGameDetails(id, { signal }), realizando uma nova requisição GET /games/{id} pela mesma instância Axios.
 - O serviço valida IDs numéricos positivos, trata HTTP 404 como jogo não encontrado e normaliza os dados básicos junto de plataformas, desenvolvedores, descrição e tempo médio de jogo. Campos opcionais ausentes usam alternativas textuais ou são omitidos.
 - A descrição prioriza description_raw. O fallback description remove tags, preserva quebras de parágrafo e trata entidades HTML comuns e referências numéricas, sem WebView ou novas bibliotecas.
-- A tela utiliza ScrollView, capa maior com GameCover, nota pública RAWG e atribuição. Possui carregamento, mensagens amigáveis e Tentar novamente.
+- A tela utiliza ScrollView, capa maior com GameCover, nota pública RAWG e atribuição. Possui carregamento e mensagens amigáveis; falhas recuperáveis oferecem Tentar novamente, enquanto IDs inválidos ou jogos inexistentes oferecem Voltar.
 - Ao receber os dados, navigation.setOptions({ title: game.name }) atualiza o cabeçalho nativo, que mantém o botão de voltar. A troca de ID limpa o conteúdo anterior; cancelamento e invalidação impedem respostas obsoletas e atualizações após desmontagem.
 - O catálogo continua montado no Stack ao abrir Busca ou Detalhes, preservando seu estado. A lógica de useGames e a autenticação não foram alteradas.
 - A proteção da chave ausente ou placeholder permanece na instância Axios e também se aplica a busca e detalhes.
@@ -165,8 +165,26 @@ As operações capturam o ID da conta antes de entrar na fila. Operações ainda
 
 Falhas de leitura bloqueiam a edição até uma nova tentativa bem-sucedida. As telas de coleções e os controles dos detalhes oferecem recuperação dessa leitura. Falhas de gravação aparecem no Context e nas telas, permitindo repetir a ação com a última coleção confirmada preservada.
 
-## Pendências para a Etapa 6
+## Refinamentos de UI/UX e acessibilidade — Etapa 6
 
-Prosseguir com o escopo definido no próximo enunciado. Não foram adicionados recursos de nuvem, sincronização entre dispositivos, comentários públicos, recomendações ou download permanente de capas. A instalação posterior das dependências já declaradas e a configuração manual da chave RAWG continuam necessárias para utilizar as consultas. Nenhuma nova dependência foi introduzida; o .env e o package.json não foram alterados nesta etapa.
+- Login e Cadastro mantêm os formulários roláveis com KeyboardAvoidingView, avançam entre campos pelo teclado e apresentam texto junto ao indicador de envio. Bloqueios imediatos evitam submissões repetidas antes do próximo render, e respostas após desmontagem não atualizam o formulário.
+- Botões, links e filtros receberam dimensões mínimas de toque de 48 pontos, sem alturas fixas que limitem textos. A escala de fonte do sistema permanece habilitada.
+- A identidade escura e roxa foi preservada. Estados desabilitados usam superfícies escuras legíveis, com estados acessíveis explícitos. As áreas tocáveis mantêm feedback visual ao pressionar.
+- Filtros selecionados exibem uma marca de seleção além da cor. Cards comunicam Favorito ou Não favoritado por texto e pelo label acessível, mantendo as duas colunas do catálogo e a lista da busca.
+- Detalhes seguem a ordem capa/nome, informações gerais, descrição e controles de favoritos/avaliação; a atribuição RAWG continua visível. O botão de nova tentativa possui bloqueio contra repetições simultâneas.
+- A recuperação de jogos no catálogo repete somente a operação de jogos que falhou. Os gêneros mantêm sua recuperação independente, sem disparar consultas adicionais pelo botão de jogos.
+- Estados vazios de catálogo, busca, favoritos e finalizados receberam mensagens e orientações consistentes. As coleções continuam distinguindo leitura inicial, falha e coleção vazia.
+- Gravações de favoritos e avaliações apresentam texto e indicador. Toques repetidos nos controles dos detalhes e na remoção de favoritos são bloqueados enquanto a ação está pendente, sem alterar as filas de persistência.
+- GameCover trata a capa dos detalhes como imagem informativa, anunciando também sua indisponibilidade. Capas decorativas nos cards não repetem o nome já anunciado pelo card; placeholders permitem crescimento do texto.
+- RatingStars mantém labels descritivos por nota, informa a seleção e conserva áreas de toque amplas. Na lista de finalizados, a avaliação é anunciada uma vez pelo componente, evitando repetir o mesmo valor pelo texto associado.
+- RawgAttribution mantém o texto e o destino originais, apresenta feedback de abertura e impede ativações simultâneas. Uma falha orienta tocar novamente no link.
+
+Os Contexts, os hooks de catálogo/busca, o modelo de autenticação, as chaves de armazenamento, a navegação e o contrato RAWG não foram alterados nesta etapa. Nenhum arquivo de configuração ou dependência foi modificado.
+
+## Pendências para a Etapa 7 e revisão manual
+
+O aplicativo não foi executado nem testado nesta etapa. Ainda dependem de observação manual em dispositivos Android/iOS: comportamento do teclado e foco; textos com fontes aumentadas em telas pequenas; anúncios e ordem de leitura com TalkBack/VoiceOver; contraste final e navegação por toque; recuperação de falhas reais de rede e armazenamento; persistência após reabrir o aplicativo e isolamento entre contas. Não foi realizada medição automatizada de contraste ou certificação WCAG AA.
+
+A instalação posterior das dependências já declaradas e a configuração manual da chave RAWG continuam necessárias para utilizar as consultas. O .env e seu placeholder foram preservados. O trabalho seguinte deve seguir o escopo do enunciado da Etapa 7.
 
 Nenhum comando de terminal ou Git, instalação, teste, lint, build, servidor, execução do Expo, pesquisa web ou validação automatizada foi realizado nesta etapa. O aplicativo não foi executado e nenhuma consulta à RAWG foi enviada durante a implementação.

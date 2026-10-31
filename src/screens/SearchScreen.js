@@ -71,11 +71,11 @@ export default function SearchScreen({ navigation }) {
       ) : hasSearched ? (
         <>
           <Text style={styles.emptyTitle}>Nenhum jogo encontrado</Text>
-          <Text style={styles.message}>Não encontramos jogos para “{term}”. Tente outro nome.</Text>
+          <Text style={styles.message}>Nenhum jogo encontrado para esta pesquisa. Tente outro nome.</Text>
         </>
       ) : (
         <>
-          <Text style={styles.emptyTitle}>Qual jogo você procura?</Text>
+          <Text style={styles.emptyTitle}>Pesquise pelo nome de um jogo</Text>
           <Text style={styles.message}>Digite um nome e toque em Buscar para começar.</Text>
         </>
       )}
@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
   header: { marginBottom: 24 },
   title: { color: '#fafafa', fontSize: 28, fontWeight: '700', marginBottom: 8 },
   subtitle: { color: '#c4c4d8', fontSize: 16, marginBottom: 20 },
-  input: { color: '#fafafa', backgroundColor: '#1c1c2c', borderColor: '#81719f', borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 16 },
-  button: { backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14, alignItems: 'center' },
+  input: { minHeight: 48, color: '#fafafa', backgroundColor: '#1c1c2c', borderColor: '#81719f', borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 16 },
+  button: { minHeight: 48, minWidth: 48, backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14, alignItems: 'center' },
   buttonText: { color: '#ffffff', fontSize: 16, fontWeight: '700', textAlign: 'center' },
   resultText: { color: '#c4c4d8', fontSize: 16, marginTop: 24 },
   result: { marginBottom: 16 },
@@ -120,5 +120,5 @@ const styles = StyleSheet.create({
   message: { color: '#c4c4d8', fontSize: 16, textAlign: 'center', marginVertical: 20 },
   error: { color: '#fda4af', fontSize: 16, marginBottom: 16 },
   pressed: { opacity: 0.8 },
-  disabled: { opacity: 0.6 },
+  disabled: { backgroundColor: '#35304c' },
 });

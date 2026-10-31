@@ -23,7 +23,7 @@ export default function GameCard({ game, onPress, variant = 'grid', isFavorite =
       </View>
       <View style={[styles.content, variant === 'list' && styles.listContent]}>
         <Text style={styles.title}>{game.name}</Text>
-        {isFavorite !== null && <Text style={styles.favorite} accessible={false}>{isFavorite ? '♥ Favorito' : '♡'}</Text>}
+        {isFavorite !== null && <Text style={styles.favorite} accessible={false}>{isFavorite ? '♥ Favorito' : '♡ Não favoritado'}</Text>}
         <View style={styles.metadata}>
           {rating !== null && <Text style={styles.rating}>RAWG {rating}/5</Text>}
           {year && <Text style={styles.year}>{year}</Text>}
@@ -34,8 +34,8 @@ export default function GameCard({ game, onPress, variant = 'grid', isFavorite =
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, backgroundColor: '#1c1c2c', borderWidth: 1, borderColor: '#35304c', borderRadius: 14 },
-  content: { padding: 12 },
+  card: { minHeight: 48, minWidth: 44, flex: 1, backgroundColor: '#1c1c2c', borderWidth: 1, borderColor: '#35304c', borderRadius: 14 },
+  content: { padding: 12, minWidth: 0 },
   favorite: { color: '#c4b5fd', fontSize: 16, marginBottom: 10 },
   listCard: { flex: 0, flexDirection: 'row', alignItems: 'flex-start' },
   listCover: { width: '34%' },

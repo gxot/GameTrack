@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getGameDetails } from '../services/gamesService';
@@ -32,6 +32,15 @@ function GameCollections({ game }) {
   // Apenas a seleção ainda não salva é local. A coleção e a nota salva vêm do Context.
   const [draft, setDraft] = useState({ baseline: savedRating, value: savedRating });
   const [validationMessage, setValidationMessage] = useState('');
+  const favoriteAction = useRef(false);
+  const completedAction = useRef(false);
+
+  function runAction(lock, operation) {
+    if (lock.current) return;
+    lock.current = true;
+    // O erro permanece no Context; o bloqueio impede toques repetidos antes do próximo render.
+    Promise.resolve().then(operation).catch(() => {}).finally(() => { lock.current = false; });
+  }
   const selectedRating = draft.baseline === savedRating ? draft.value : savedRating;
   const favorited = isFavorite(game.id);
   const completed = isCompleted(game.id);
@@ -39,20 +48,19 @@ function GameCollections({ game }) {
   const completedDisabled = !isCompletedReady || isLoadingCompleted || isSavingCompleted;
 
   function saveCompletion() {
+    if (completedDisabled || completedAction.current) return;
     if (!Number.isInteger(selectedRating) || selectedRating < 1 || selectedRating > 5) {
       setValidationMessage('Selecione de 1 a 5 estrelas antes de marcar o jogo como finalizado.');
       return;
     }
     setValidationMessage('');
-    const operation = completed ? updateRating(game.id, selectedRating) : markCompleted(game, selectedRating);
-    // O Context exibe o erro e conserva a última coleção confirmada em disco.
-    operation.catch(() => {});
+    runAction(completedAction, () => completed ? updateRating(game.id, selectedRating) : markCompleted(game, selectedRating));
   }
 
   return (
     <View style={styles.collections}>
       <Pressable
-        onPress={() => toggleFavorite(game).catch(() => {})} disabled={favoriteDisabled}
+        onPress={() => { if (!favoriteDisabled) runAction(favoriteAction, () => toggleFavorite(game)); }} disabled={favoriteDisabled}
         style={({ pressed }) => [styles.collectionButton, favorited && styles.activeButton, pressed && styles.pressed, favoriteDisabled && styles.disabled]}
         accessibilityRole="button"
         accessibilityLabel={!isFavoritesReady ? 'Estado de favorito ainda não disponível' : favorited ? 'Jogo favoritado. Remover dos favoritos' : 'Adicionar jogo aos favoritos'}
@@ -60,22 +68,25 @@ function GameCollections({ game }) {
       >
         <Text style={styles.buttonText}>{isLoadingFavorites ? 'Carregando favorito…' : !isFavoritesReady ? 'Favorito indisponível' : favorited ? '♥ Remover dos favoritos' : '♡ Favoritar'}</Text>
       </Pressable>
-      {isSavingFavorites && <ActivityIndicator color="#a78bfa" accessibilityLabel="Salvando favorito" />}
+      <View style={styles.savingStatus}>
+        {(isLoadingFavorites || isSavingFavorites) && <ActivityIndicator color="#a78bfa" accessible={false} />}
+        {isSavingFavorites && <Text style={styles.ratingHint}>Salvando favorito…</Text>}
+      </View>
       {!!favoriteError && <Text style={styles.collectionError} accessibilityRole="alert" accessibilityLiveRegion="polite">{favoriteError}</Text>}
       {!isLoadingFavorites && !isFavoritesReady && (
-        <Pressable onPress={reloadFavorites} style={styles.collectionButton} accessibilityRole="button" accessibilityLabel="Tentar carregar favoritos novamente">
+        <Pressable onPress={reloadFavorites} style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Tentar carregar favoritos novamente">
           <Text style={styles.buttonText}>Tentar carregar favoritos</Text>
         </Pressable>
       )}
 
       <Text style={styles.sectionTitle} accessibilityRole="header">Minha avaliação</Text>
       {isLoadingCompleted ? (
-        <View accessibilityLabel="Carregando minha avaliação" accessibilityState={{ busy: true }}>
-          <ActivityIndicator color="#a78bfa" />
+        <View accessible accessibilityLabel="Carregando minha avaliação" accessibilityState={{ busy: true }}>
+          <ActivityIndicator color="#a78bfa" accessible={false} />
           <Text style={styles.value}>Carregando sua avaliação…</Text>
         </View>
       ) : !isCompletedReady ? (
-        <Pressable onPress={reloadCompleted} style={styles.collectionButton} accessibilityRole="button" accessibilityLabel="Tentar carregar jogos finalizados novamente">
+        <Pressable onPress={reloadCompleted} style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Tentar carregar jogos finalizados novamente">
           <Text style={styles.buttonText}>Tentar carregar minha avaliação</Text>
         </Pressable>
       ) : (
@@ -90,14 +101,14 @@ function GameCollections({ game }) {
           <Pressable
             onPress={saveCompletion} disabled={completedDisabled}
             style={({ pressed }) => [styles.collectionButton, styles.activeButton, pressed && styles.pressed, completedDisabled && styles.disabled]}
-            accessibilityRole="button" accessibilityLabel={completed ? 'Salvar minha avaliação pessoal' : 'Marcar jogo como finalizado com a nota selecionada'}
+            accessibilityRole="button" accessibilityLabel={completed ? 'Jogo finalizado. Salvar minha avaliação pessoal' : 'Marcar jogo como finalizado com a nota selecionada'}
             accessibilityState={{ disabled: completedDisabled, busy: isSavingCompleted }}
           >
             <Text style={styles.buttonText}>{completed ? 'Salvar avaliação' : 'Marcar como finalizado'}</Text>
           </Pressable>
           {completed && (
             <Pressable
-              onPress={() => { setValidationMessage(''); removeCompleted(game.id).catch(() => {}); }} disabled={completedDisabled}
+              onPress={() => { setValidationMessage(''); if (!completedDisabled) runAction(completedAction, () => removeCompleted(game.id)); }} disabled={completedDisabled}
               style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed, completedDisabled && styles.disabled]}
               accessibilityRole="button" accessibilityLabel="Jogo finalizado. Remover dos jogos finalizados"
               accessibilityState={{ disabled: completedDisabled, busy: isSavingCompleted }}
@@ -107,7 +118,12 @@ function GameCollections({ game }) {
           )}
         </>
       )}
-      {isSavingCompleted && <ActivityIndicator color="#a78bfa" accessibilityLabel="Salvando minha avaliação" />}
+      {isSavingCompleted && (
+        <View style={styles.savingStatus} accessible accessibilityLabel="Salvando minha avaliação" accessibilityState={{ busy: true }}>
+          <ActivityIndicator color="#a78bfa" accessible={false} />
+          <Text style={styles.ratingHint}>Salvando avaliação…</Text>
+        </View>
+      )}
       {!!completedError && <Text style={styles.collectionError} accessibilityRole="alert" accessibilityLiveRegion="polite">{completedError}</Text>}
     </View>
   );
@@ -117,10 +133,18 @@ export default function GameDetailsScreen({ route, navigation }) {
   const id = route.params?.id;
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState({ id: null, game: null, isLoading: true, error: null });
+  const detailRequest = useRef(null);
+
+  function retryDetails() {
+    if (detailRequest.current) return;
+    detailRequest.current = true;
+    setAttempt((previous) => previous + 1);
+  }
 
   useEffect(() => {
     let isActive = true;
     const controller = new AbortController();
+    detailRequest.current = controller;
     setState({ id, game: null, isLoading: true, error: null });
     navigation.setOptions({ title: 'Detalhes do jogo' });
 
@@ -140,6 +164,8 @@ export default function GameDetailsScreen({ route, navigation }) {
             message: failure instanceof RawgError ? failure.message : 'Não foi possível carregar os detalhes. Tente novamente.',
           },
         });
+      } finally {
+        if (isActive && detailRequest.current === controller) detailRequest.current = null;
       }
     }
 
@@ -147,6 +173,7 @@ export default function GameDetailsScreen({ route, navigation }) {
     return () => {
       isActive = false;
       controller.abort();
+      if (detailRequest.current === controller) detailRequest.current = null;
     };
   }, [id, attempt, navigation]);
 
@@ -158,8 +185,8 @@ export default function GameDetailsScreen({ route, navigation }) {
 
   if (isLoading) {
     content = (
-      <View style={styles.center} accessibilityLabel="Carregando detalhes do jogo" accessibilityState={{ busy: true }}>
-        <ActivityIndicator size="large" color="#a78bfa" />
+      <View style={styles.center} accessible accessibilityLabel="Carregando detalhes do jogo" accessibilityState={{ busy: true }}>
+        <ActivityIndicator size="large" color="#a78bfa" accessible={false} />
         <Text style={styles.message}>Carregando detalhes…</Text>
       </View>
     );
@@ -171,10 +198,10 @@ export default function GameDetailsScreen({ route, navigation }) {
         <Text style={styles.message} accessibilityRole="alert" accessibilityLiveRegion="polite">{error.message}</Text>
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-          onPress={() => setAttempt((previous) => previous + 1)}
-          accessibilityRole="button" accessibilityLabel="Tentar carregar os detalhes novamente"
+          onPress={unavailable ? () => navigation.goBack() : retryDetails}
+          accessibilityRole="button" accessibilityLabel={unavailable ? 'Voltar à tela anterior' : 'Tentar carregar os detalhes novamente'}
         >
-          <Text style={styles.buttonText}>Tentar novamente</Text>
+          <Text style={styles.buttonText}>{unavailable ? 'Voltar' : 'Tentar novamente'}</Text>
         </Pressable>
       </ScrollView>
     );
@@ -182,11 +209,9 @@ export default function GameDetailsScreen({ route, navigation }) {
     const released = game.released ? game.released.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1') : 'Não informada';
     content = (
       <ScrollView contentContainerStyle={styles.content}>
-        <View accessible accessibilityRole="image" accessibilityLabel={'Capa de ' + game.name}>
-          <GameCover key={game.id} uri={game.background_image} name={game.name} />
-        </View>
+        <GameCover key={game.id} uri={game.background_image} name={game.name} accessible />
         <Text style={styles.title} accessibilityRole="header">{game.name}</Text>
-        <GameCollections key={game.id} game={game} />
+        <Text style={styles.sectionTitle} accessibilityRole="header">Informações gerais</Text>
         <DetailField label="Data de lançamento" value={released} />
         <DetailField label="Gêneros" value={game.genres.map((genre) => genre.name).join(', ') || 'Não informados'} />
         <DetailField label="Plataformas" value={game.platforms.join(', ') || 'Não informadas'} />
@@ -195,6 +220,8 @@ export default function GameDetailsScreen({ route, navigation }) {
         {game.playtime !== null && <DetailField label="Tempo médio de jogo" value={game.playtime + (game.playtime === 1 ? ' hora' : ' horas')} />}
         <Text style={styles.sectionTitle} accessibilityRole="header">Sobre o jogo</Text>
         <Text style={styles.description} selectable>{game.description || 'Descrição não disponível para este jogo.'}</Text>
+        <Text style={styles.sectionTitle} accessibilityRole="header">Minha coleção</Text>
+        <GameCollections key={game.id} game={game} />
       </ScrollView>
     );
   }
@@ -213,21 +240,22 @@ const styles = StyleSheet.create({
   errorContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   content: { padding: 24 },
   title: { color: '#fafafa', fontSize: 28, fontWeight: '800', marginTop: 24, marginBottom: 24 },
-  collections: { borderWidth: 1, borderColor: '#35304c', borderRadius: 14, padding: 16, marginBottom: 24 },
-  collectionButton: { borderWidth: 1, borderColor: '#81719f', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 12 },
+  savingStatus: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 },
+  collections: { backgroundColor: '#1c1c2c', borderWidth: 1, borderColor: '#35304c', borderRadius: 14, padding: 16, marginBottom: 24 },
+  collectionButton: { minWidth: 48, minHeight: 48, justifyContent: 'center', borderWidth: 1, borderColor: '#81719f', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 12 },
   activeButton: { backgroundColor: '#7c3aed' },
-  disabled: { opacity: 0.6 },
+  disabled: { backgroundColor: '#35304c' },
   collectionError: { color: '#fda4af', fontSize: 16, marginBottom: 16 },
   completionStatus: { color: '#c4b5fd', fontSize: 16, marginBottom: 12 },
   ratingHint: { color: '#c4c4d8', fontSize: 15, marginVertical: 12 },
   field: { marginBottom: 20 },
   label: { color: '#c4b5fd', fontSize: 15, fontWeight: '700', marginBottom: 6 },
   value: { color: '#e5e5ef', fontSize: 17 },
-  sectionTitle: { color: '#c4b5fd', fontSize: 22, fontWeight: '700', marginTop: 8, marginBottom: 16 },
+  sectionTitle: { color: '#c4b5fd', fontSize: 22, fontWeight: '700', marginTop: 24, marginBottom: 16 },
   description: { color: '#e5e5ef', fontSize: 17 },
   errorTitle: { color: '#fafafa', fontSize: 22, fontWeight: '700', textAlign: 'center' },
   message: { color: '#c4c4d8', fontSize: 16, textAlign: 'center', marginVertical: 20 },
-  button: { backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14 },
+  button: { minWidth: 48, minHeight: 48, justifyContent: 'center', backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14 },
   buttonText: { color: '#ffffff', fontSize: 16, fontWeight: '700', textAlign: 'center' },
   pressed: { opacity: 0.8 },
 });
