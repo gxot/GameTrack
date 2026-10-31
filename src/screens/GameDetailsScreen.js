@@ -211,7 +211,7 @@ export default function GameDetailsScreen({ route, navigation }) {
     const released = game.released ? game.released.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1') : 'Não informada';
     content = (
       <ScrollView contentContainerStyle={styles.content}>
-        <GameCover key={game.id} uri={game.background_image} name={game.name} accessible />
+        <GameCover key={'cover-' + game.id} uri={game.background_image} name={game.name} accessible />
         <Text style={styles.title} accessibilityRole="header">{game.name}</Text>
         <Text style={styles.sectionTitle} accessibilityRole="header">Informações gerais</Text>
         <DetailField label="Data de lançamento" value={released} />
@@ -223,7 +223,7 @@ export default function GameDetailsScreen({ route, navigation }) {
         <Text style={styles.sectionTitle} accessibilityRole="header">Sobre o jogo</Text>
         <Text style={styles.description} selectable>{game.description || 'Descrição não disponível para este jogo.'}</Text>
         <Text style={styles.sectionTitle} accessibilityRole="header">Minha coleção</Text>
-        <GameCollections key={game.id} game={game} />
+        <GameCollections key={'collections-' + game.id} game={game} />
       </ScrollView>
     );
   }
