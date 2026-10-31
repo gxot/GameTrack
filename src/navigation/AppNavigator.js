@@ -7,6 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import CatalogScreen from '../screens/CatalogScreen';
+import SearchScreen from '../screens/SearchScreen';
+import GameDetailsScreen from '../screens/GameDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 const theme = {
@@ -26,9 +28,20 @@ export default function AppNavigator() {
   }
   return (
     <NavigationContainer theme={theme}>
-      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#101018' } }}>
+      <Stack.Navigator screenOptions={{
+        headerShown: false,
+        headerStyle: { backgroundColor: '#1c1c2c' },
+        headerTintColor: '#c4b5fd',
+        headerTitleStyle: { color: '#fafafa' },
+        headerBackTitle: 'Voltar',
+        contentStyle: { backgroundColor: '#101018' },
+      }}>
         {user ? (
-          <Stack.Screen name="Catalog" component={CatalogScreen} />
+          <>
+            <Stack.Screen name="Catalog" component={CatalogScreen} />
+            <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: true, title: 'Buscar jogos' }} />
+            <Stack.Screen name="GameDetails" component={GameDetailsScreen} options={{ headerShown: true, title: 'Detalhes do jogo' }} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
