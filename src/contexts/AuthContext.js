@@ -6,6 +6,7 @@ const AuthContext = createContext(undefined);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [initializationError, setInitializationError] = useState(null);
   const operationInProgress = useRef(false);
 
   useEffect(() => {
@@ -13,9 +14,15 @@ export function AuthProvider({ children }) {
     async function initialize() {
       try {
         const restoredUser = await restoreSession();
-        if (isActive) setUser(restoredUser);
+        if (isActive) {
+          setUser(restoredUser);
+          setInitializationError(null);
+        }
       } catch {
-        if (isActive) setUser(null);
+        if (isActive) {
+          setUser(null);
+          setInitializationError('Não foi possível restaurar sua sessão. Informe seu e-mail e senha para entrar novamente.');
+        }
       } finally {
         if (isActive) setIsInitializing(false);
       }
@@ -32,6 +39,7 @@ export function AuthProvider({ children }) {
     try {
       const nextUser = await operation();
       setUser(nextUser);
+      setInitializationError(null);
     } finally {
       operationInProgress.current = false;
     }
@@ -51,7 +59,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isInitializing, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isInitializing, initializationError, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

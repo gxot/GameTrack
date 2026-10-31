@@ -156,12 +156,14 @@ export default function GameDetailsScreen({ route, navigation }) {
         setState({ id, game, isLoading: false, error: null });
         navigation.setOptions({ title: game.name });
       } catch (failure) {
-        if (!isActive || isRequestCanceled(failure)) return;
+        if (!isActive) return;
+        const canceled = isRequestCanceled(failure);
         setState({
           id, game: null, isLoading: false,
           error: {
-            code: failure instanceof RawgError ? failure.code : 'REQUEST_FAILED',
-            message: failure instanceof RawgError ? failure.message : 'Não foi possível carregar os detalhes. Tente novamente.',
+            code: canceled ? 'REQUEST_CANCELED' : failure instanceof RawgError ? failure.code : 'REQUEST_FAILED',
+            message: canceled ? 'A consulta foi cancelada. Tente novamente.'
+              : failure instanceof RawgError ? failure.message : 'Não foi possível carregar os detalhes. Tente novamente.',
           },
         });
       } finally {

@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
+  const { login, initializationError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const displayedError = error || initializationError;
   const pending = useRef(false);
   const mounted = useRef(false);
   const passwordInput = useRef(null);
@@ -61,7 +62,7 @@ export default function LoginScreen({ navigation }) {
               accessibilityState={{ disabled: isSubmitting }}
               returnKeyType="go" onSubmitEditing={handleLogin}
             />
-            {!!error && <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text>}
+            {!!displayedError && <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">{displayedError}</Text>}
             <Pressable
               style={({ pressed }) => [styles.button, pressed && styles.pressed, isSubmitting && styles.disabled]}
               onPress={handleLogin} disabled={isSubmitting} accessibilityRole="button"

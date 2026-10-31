@@ -101,10 +101,12 @@ export default function useGames() {
     try {
       const result = await getGenres({ signal: controller.signal });
       if (mounted.current && genresRequest.current === controller) {
-        const seen = new Set();
+        const seenIds = new Set();
+        const seenSlugs = new Set();
         setGenres(result.filter((genre) => {
-          if (seen.has(genre.slug)) return false;
-          seen.add(genre.slug);
+          if (seenIds.has(genre.id) || seenSlugs.has(genre.slug)) return false;
+          seenIds.add(genre.id);
+          seenSlugs.add(genre.slug);
           return true;
         }));
       }
