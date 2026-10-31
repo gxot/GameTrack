@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useGameSearch from '../hooks/useGameSearch';
+import { useFavorites } from '../contexts/FavoritesContext';
 import GameCard from '../components/GameCard';
 import RawgAttribution from '../components/RawgAttribution';
 
 export default function SearchScreen({ navigation }) {
+  const { favorites, isFavorite, isFavoritesReady } = useFavorites();
   const [input, setInput] = useState('');
   const [validationError, setValidationError] = useState('');
   const { term, games, isLoading, error, hasSearched, search, retry } = useGameSearch();
@@ -85,10 +87,10 @@ export default function SearchScreen({ navigation }) {
       <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <FlatList
           style={styles.list} contentContainerStyle={styles.listContent}
-          data={games} numColumns={1} keyExtractor={(game) => String(game.id)}
+          data={games} extraData={favorites} numColumns={1} keyExtractor={(game) => String(game.id)}
           renderItem={({ item }) => (
             <View style={styles.result}>
-              <GameCard game={item} variant="list" onPress={(game) => navigation.navigate('GameDetails', { id: game.id })} />
+              <GameCard game={item} variant="list" isFavorite={isFavoritesReady ? isFavorite(item.id) : null} onPress={(game) => navigation.navigate('GameDetails', { id: game.id })} />
             </View>
           )}
           ListHeaderComponent={header} ListEmptyComponent={empty}

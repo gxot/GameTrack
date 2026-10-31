@@ -4,7 +4,7 @@ Aplicativo mobile acadêmico para a disciplina Mobile Development: Frameworks da
 
 ## Etapa atual
 
-A etapa 4 implementa busca por nome (RF08), navegação para detalhes pelo ID (RF02) e uma nova consulta à RAWG para obter os detalhes do jogo (RF03). Autenticação, logout, filtros, grade, paginação infinita e pull-to-refresh do catálogo foram preservados. A consulta de dados depende da configuração de uma chave RAWG válida e da instalação posterior das dependências já declaradas.
+A etapa 5 implementa favoritos com Context API (RF04), tela de favoritos (RF05), persistência local por usuário com AsyncStorage (RF06) e jogos finalizados com avaliação pessoal inteira de 1 a 5 estrelas (RF07). Autenticação, catálogo, busca, detalhes, filtros, paginação, refresh e logout foram preservados. As consultas à RAWG continuam dependendo de uma chave válida e das dependências já declaradas.
 
 As dependências foram apenas declaradas no package.json, sem instalação. Nenhum comando, teste, lint, build, servidor ou validação automatizada foi executado nesta etapa. As versões de Expo, React e React Native seguem o [template blank oficial do Expo SDK 54](https://github.com/expo/expo/blob/sdk-54/templates/expo-template-blank/package.json).
 
@@ -31,19 +31,25 @@ React Navigation Native Stack, Context API, AsyncStorage e Expo SecureStore são
 │   │   ├── RegisterScreen.js
 │   │   ├── CatalogScreen.js
 │   │   ├── SearchScreen.js
-│   │   └── GameDetailsScreen.js
+│   │   ├── GameDetailsScreen.js
+│   │   ├── FavoritesScreen.js
+│   │   └── CompletedScreen.js
 │   ├── components/
 │   │   ├── GameCard.js
 │   │   ├── GameCover.js
-│   │   └── RawgAttribution.js
+│   │   ├── RawgAttribution.js
+│   │   └── RatingStars.js
 │   ├── contexts/
-│   │   └── AuthContext.js
+│   │   ├── AuthContext.js
+│   │   ├── FavoritesContext.js
+│   │   └── CompletedContext.js
 │   ├── navigation/
 │   │   └── AppNavigator.js
 │   ├── services/
 │   │   ├── authStorage.js
 │   │   ├── api.js
-│   │   └── gamesService.js
+│   │   ├── gamesService.js
+│   │   └── userStorage.js
 │   └── hooks/
 │       ├── useGames.js
 │       └── useGameSearch.js
@@ -72,7 +78,7 @@ Os diretórios ainda reservados para funcionalidades futuras permanecem com seus
 
 - AuthProvider expõe user, isInitializing, login, register e logout pelo hook useAuth.
 - A sessão é restaurada no início, com ActivityIndicator antes da escolha do fluxo.
-- AppNavigator utiliza NavigationContainer e Native Stack. O estado user escolhe Login/Cadastro ou o fluxo autenticado (Catálogo, Busca e Detalhes); logout muda esse estado sem navegação manual.
+- AppNavigator utiliza NavigationContainer e Native Stack. O estado user escolhe Login/Cadastro ou o fluxo autenticado (Catálogo, Busca, Detalhes, Favoritos e Finalizados); logout muda esse estado sem navegação manual.
 - AsyncStorage mantém somente perfis com ID estável, nome e e-mail normalizado. As senhas e o identificador da sessão ficam exclusivamente no SecureStore.
 - O cadastro valida campos, formato do e-mail, senha de pelo menos 6 caracteres, confirmação e e-mails duplicados; em caso de sucesso, inicia a sessão automaticamente.
 - Logout remove somente a sessão. Perfis e credenciais permanecem para os próximos acessos.
@@ -106,7 +112,7 @@ Para utilizar o catálogo, o desenvolvedor deverá substituir manualmente `SUA_C
 
 ## Dependências
 
-Nenhuma nova dependência foi introduzida na Etapa 4. Axios ^1.13.2 já estava declarado no package.json desde a Etapa 3, sem instalação ou arquivo de lock. A integração utiliza a [instância Axios](https://axios-http.com/docs/instance) e [cancelamento com AbortController](https://axios-http.com/docs/cancellation). As dependências de Expo SDK 54, autenticação e navegação foram preservadas.
+Nenhuma nova dependência foi introduzida nas Etapas 4 e 5. Axios ^1.13.2 já estava declarado no package.json desde a Etapa 3, sem instalação ou arquivo de lock. A integração utiliza a [instância Axios](https://axios-http.com/docs/instance) e [cancelamento com AbortController](https://axios-http.com/docs/cancellation). As dependências de Expo SDK 54, autenticação e navegação foram preservadas.
 
 ## Busca por nome — RF08
 
@@ -129,8 +135,38 @@ Nenhuma nova dependência foi introduzida na Etapa 4. Axios ^1.13.2 já estava d
 - O catálogo continua montado no Stack ao abrir Busca ou Detalhes, preservando seu estado. A lógica de useGames e a autenticação não foram alteradas.
 - A proteção da chave ausente ou placeholder permanece na instância Axios e também se aplica a busca e detalhes.
 
-## Pendências para a Etapa 5
+## Favoritos, finalizados e avaliações pessoais — RF04 a RF07
 
-Continuar com os recursos definidos para a próxima etapa. Favoritos, jogos finalizados, avaliações pessoais e persistência local de jogos ainda não foram implementados. Instalar posteriormente as dependências já declaradas e preencher manualmente a chave RAWG continuam sendo pré-requisitos para utilizar as consultas. O .env e o package.json não foram alterados nesta etapa.
+- FavoritesProvider expõe favorites, isLoadingFavorites, isFavorite, addFavorite, removeFavorite, toggleFavorite e error por useFavorites().
+- CompletedProvider expõe completedGames, isLoadingCompleted, isCompleted, getPersonalRating, markCompleted, updateRating, removeCompleted e error por useCompleted().
+- Ambos também oferecem indicadores de coleção pronta e gravação em andamento, além de reloadFavorites ou reloadCompleted para recuperar falhas de leitura.
+- Os detalhes permitem favoritar/desfavoritar, selecionar estrelas, marcar como finalizado, salvar outra nota e remover dos finalizados. Nenhuma dessas ações faz outra requisição RAWG: elas utilizam o jogo que já foi carregado.
+- RatingStars aceita value, onChange e disabled. Sem onChange, mostra somente a avaliação pessoal. A nota pública RAWG continua sendo exibida separadamente.
+- GameCard recebe isFavorite por props. Catálogo, Busca e as coleções fornecem esse estado a partir de FavoritesContext, sem criar uma cópia local do estado de favoritos.
+- FavoritesScreen usa os resumos locais em FlatList, abre detalhes pelo ID e permite remover favoritos. CompletedScreen exibe os jogos finalizados e as notas pessoais. As listas distinguem carregamento, falha de leitura, coleção vazia e dados disponíveis.
+- O catálogo possui acessos para Meus favoritos e Jogos finalizados, mantendo busca, filtros, paginação e logout. As novas telas pertencem somente ao Stack autenticado e possuem retorno pelo cabeçalho nativo.
+
+## Estrutura e isolamento no AsyncStorage
+
+userStorage.js centraliza as chaves, a normalização e as filas de acesso:
+
+- @gametrack/user/<userId>/favorites
+- @gametrack/user/<userId>/completed
+
+O identificador utilizado é o ID estável do AuthContext; o e-mail não é usado como chave. Cada favorito armazena somente id, name, background_image e released. Cada finalizado armazena esses campos e personalRating, obrigatoriamente um inteiro entre 1 e 5. Dados completos da RAWG, descrições e notas públicas não são persistidos nessas coleções. Um jogo pode pertencer às duas coleções simultaneamente.
+
+A leitura utiliza getItem e JSON.parse; a gravação utiliza setItem e JSON.stringify. Chaves ausentes retornam listas vazias, IDs e notas são validados e registros repetidos são deduplicados por ID. Uma falha de leitura ou estrutura inválida produz erro sem apagar ou substituir os dados persistidos. Não há AsyncStorage.clear nem gravação automática de listas vazias durante a hidratação.
+
+FavoritesProvider e CompletedProvider são montados somente com um usuário autenticado. A árvore recebe key=user.id, sendo desmontada no logout e reiniciada em outra conta. O AuthContext e authStorage.js permanecem inalterados.
+
+Cada Provider serializa suas alterações usando a coleção mais recente confirmada. O estado só muda após a gravação concluir; se falhar, a coleção anterior permanece e o erro é apresentado. Operações consecutivas não sobrescrevem alterações anteriores. O serviço também enfileira acessos por chave, coordenando uma gravação ainda em andamento com a leitura de uma nova montagem da mesma conta.
+
+As operações capturam o ID da conta antes de entrar na fila. Operações ainda não iniciadas são invalidadas após desmontagem; as que já foram enviadas ao armazenamento concluem somente na chave capturada e não atualizam telas desmontadas. Uma conta posterior usa suas próprias chaves. Remover finalizados não remove favoritos, e logout não apaga nenhuma coleção.
+
+Falhas de leitura bloqueiam a edição até uma nova tentativa bem-sucedida. As telas de coleções e os controles dos detalhes oferecem recuperação dessa leitura. Falhas de gravação aparecem no Context e nas telas, permitindo repetir a ação com a última coleção confirmada preservada.
+
+## Pendências para a Etapa 6
+
+Prosseguir com o escopo definido no próximo enunciado. Não foram adicionados recursos de nuvem, sincronização entre dispositivos, comentários públicos, recomendações ou download permanente de capas. A instalação posterior das dependências já declaradas e a configuração manual da chave RAWG continuam necessárias para utilizar as consultas. Nenhuma nova dependência foi introduzida; o .env e o package.json não foram alterados nesta etapa.
 
 Nenhum comando de terminal ou Git, instalação, teste, lint, build, servidor, execução do Expo, pesquisa web ou validação automatizada foi realizado nesta etapa. O aplicativo não foi executado e nenhuma consulta à RAWG foi enviada durante a implementação.

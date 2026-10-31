@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 import useGames from '../hooks/useGames';
 import GameCard from '../components/GameCard';
 import RawgAttribution from '../components/RawgAttribution';
 
 export default function CatalogScreen({ navigation }) {
   const { user, logout } = useAuth();
+  const { favorites, isFavorite, isFavoritesReady } = useFavorites();
   const {
     games, hasNextPage, isLoading, isLoadingMore, isRefreshing, error,
     genres, isLoadingGenres, genresError, selectedGenre, selectGenre,
@@ -74,6 +76,14 @@ export default function CatalogScreen({ navigation }) {
       >
         <Text style={styles.buttonText}>Buscar jogos</Text>
       </Pressable>
+      <View style={styles.collectionLinks}>
+        <Pressable onPress={() => navigation.navigate('Favorites')} style={styles.collectionButton} accessibilityRole="button" accessibilityLabel="Meus favoritos">
+          <Text style={styles.collectionText}>Meus favoritos</Text>
+        </Pressable>
+        <Pressable onPress={() => navigation.navigate('Completed')} style={styles.collectionButton} accessibilityRole="button" accessibilityLabel="Jogos finalizados">
+          <Text style={styles.collectionText}>Jogos finalizados</Text>
+        </Pressable>
+      </View>
       <Text style={styles.title} accessibilityRole="header">Explore os jogos</Text>
       <Text style={styles.subtitle}>Descubra seu próximo jogo por gênero.</Text>
       {isLoadingGenres && (
@@ -154,7 +164,7 @@ export default function CatalogScreen({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <FlatList
         ref={list} style={styles.list} contentContainerStyle={styles.listContent}
-        data={games} renderItem={({ item }) => <View style={styles.cell}><GameCard game={item} onPress={(game) => navigation.navigate('GameDetails', { id: game.id })} /></View>}
+        data={games} extraData={favorites} renderItem={({ item }) => <View style={styles.cell}><GameCard game={item} isFavorite={isFavoritesReady ? isFavorite(item.id) : null} onPress={(game) => navigation.navigate('GameDetails', { id: game.id })} /></View>}
         keyExtractor={(item) => String(item.id)} numColumns={2}
         onEndReached={loadMore} onEndReachedThreshold={0.4}
         refreshing={isRefreshing} onRefresh={refresh}
@@ -169,6 +179,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#101018' },
   list: { flex: 1 },
   listContent: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 12 },
+  collectionLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
+  collectionButton: { borderWidth: 1, borderColor: '#81719f', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, flexGrow: 1 },
+  collectionText: { color: '#c4b5fd', fontSize: 16, textAlign: 'center', fontWeight: '600' },
   header: { paddingHorizontal: 6, marginBottom: 20 },
   topRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 28 },
   identity: { flexGrow: 1, flexShrink: 1 },
